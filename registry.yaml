@@ -1,0 +1,98 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    creationTimestamp: null
+    name: registry
+- apiVersion: v1
+  groupNames: null
+  kind: ClusterRoleBinding
+  metadata:
+    creationTimestamp: null
+    name: registry-registry-role
+  roleRef:
+    kind: ClusterRole
+    name: system:registry
+  subjects:
+  - kind: ServiceAccount
+    name: registry
+    namespace: default
+  userNames:
+  - system:serviceaccount:default:registry
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    creationTimestamp: null
+    labels:
+      docker-registry: default
+    name: docker-registry
+  spec:
+    replicas: 1
+    selector:
+      docker-registry: default
+    strategy:
+      resources: {}
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          docker-registry: default
+      spec:
+        containers:
+        - env:
+          - name: REGISTRY_HTTP_ADDR
+            value: :5000
+          - name: REGISTRY_HTTP_NET
+            value: tcp
+          - name: REGISTRY_HTTP_SECRET
+            value: OGrUYFB547ZYrMPwlP4k7c6SPZoiOu3t574stflSr04=
+          image: openshift/origin-docker-registry:v1.3.0-alpha.0
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          name: registry
+          ports:
+          - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            timeoutSeconds: 5
+          resources: {}
+          securityContext:
+            privileged: false
+          volumeMounts:
+          - mountPath: /registry
+            name: registry-storage
+        serviceAccount: registry
+        serviceAccountName: registry
+        volumes:
+        - emptyDir: {}
+          name: registry-storage
+    test: false
+    triggers:
+    - type: ConfigChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    labels:
+      docker-registry: default
+    name: docker-registry
+  spec:
+    ports:
+    - name: 5000-tcp
+      port: 5000
+      targetPort: 5000
+    selector:
+      docker-registry: default
+    sessionAffinity: ClientIP
+  status:
+    loadBalancer: {}
+kind: List
+metadata: {}
