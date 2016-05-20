@@ -1,1 +1,0 @@
-# docker-bday-voting-app
